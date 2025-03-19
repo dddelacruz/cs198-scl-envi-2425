@@ -13,17 +13,18 @@ library(tsibble)
 library(Matrix) 
 library(ggplot2)
 library(INLAutils)
+library(rgdal)
+library(sp)
 
 # load data
 total_data <- read.csv('../aggregated_data/CATANDUANES_total.csv')
 
 # load shapefile
-shapefile <- st_read('catanduanes_shapefile.shp')
+shapefile <- readOGR('catanduanes_shapefile.shp')
 
 ggplot() + 
-  geom_sf(data = shapefile, size = 1.5, color = "black", fill = "cyan1") + 
-  ggtitle("Catanduanes") + 
-  coord_sf()
+  geom_polygon(data = shapefile, colour = "black", fill = NA,  aes(x = long, y = lat, group = group)) +
+  coord_fixed()
 
 sf::sf_use_s2(FALSE)
 
@@ -48,24 +49,31 @@ nb2INLA("map.adj", nb)
 g <- inla.read.graph(filename = "map.adj")
 
 # define index for every polygon
-shapefile$idarea <- 1:nrow(shapefile)
+shapefile$idarea <- 1:nrow(shapefile@data)
 
 # combine data with shapefile
 
-shapefile <- shapefile %>%
+shapefile@data <- shapefile@data %>%
   rename(Municipality = Labels)
 
-map <- shapefile
-map <- map %>%
+shapefile@data <- shapefile@data %>%
   full_join(total_data, by="Municipality")
 
+# remove unnecessary columns
+shapefile@data <- select(shapefile@data,-c(X,FID))
 
 # run inla model (just for cases)
-formula = Deaths ~ f(idarea, model = "bym", graph = g, hyper = list(prec.unstruct = list(prior = sdunif), prec.spatial = list(prior = sdunif)))
+formula = Cases ~ f(idarea, model = "bym", graph = g, hyper = list(prec.unstruct = list(prior = sdunif), prec.spatial = list(prior = sdunif)))
 
-mod <- inla(formula, family="poisson", data=map,control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+mod <- inla(formula, family="poisson", data=shapefile@data,control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
 
 summary(mod)
 plot(mod)
 
-fitted_values <- mod$summary.fitted.values[, "mean"]
+# add fitted values to dataframe
+shapefile@data$fitted_values <-  mod$summary.fitted.values[, "mean"]
+
+# compute relative risks
+
+
+# plot relative risks on shapefile
