@@ -4,6 +4,9 @@ library(sp)
 library(INLA)
 library(dplyr)
 library(tidyverse)
+library(INLAutils)
+library(ggplot2)
+library(ggregplot)
 
 # load location data and create mesh
 location_data <- read.csv("../location_data/filtered_data/CATANDUANES.csv")
@@ -22,7 +25,7 @@ points(locations, col = "red", pch = 20)
 
 
 # load cases data
-cases <- read.csv("../aggregated_data/CATANDUANES.csv")
+cases <- read.csv("../aggregated_data/CATANDUANES_total.csv")
 
 
 # create model based off example 9.12 from book
@@ -40,9 +43,10 @@ spde = inla.spde2.matern(
   constr = TRUE
 )
 
+municipalities <- factor(c('SAN MIGUEL', 'BAGAMANOC', 'VIRAC', 'CARAMORAN', 'GIGMOTO', 'BARAS', 'BATO', 'PANDAN', 'PANGANIBAN', 'SAN ANDRES', 'VIGA'))
 
 # fitting model 
-formula = log(NewCases) ~ 1 + f(as.numeric(Mun_ID), model=spde)
+formula = log(Cases) ~ 1 + f(Municipality, model=spde, values=municipalities)
 
 model = inla(
   formula,
@@ -53,6 +57,15 @@ model = inla(
 )
 
 summary(model)
+
+plot(model)
+
+autoplot(model)
+
+autoplot(mesh)
+
+proj = inla.mesh.projector(mesh)
+inla.mesh.project(mesh)
 
 
 #from https://becarioprecario.bitbucket.io/inla-gitbook/ch-temporal.html#separable-models
