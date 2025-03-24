@@ -1,3 +1,4 @@
+Sys.setlocale("LC_ALL","English")
 rm(list=ls())
 
 library(dplyr)
@@ -81,3 +82,5 @@ summary(bym2)
 
 
 # plot relative risks on shapefile
+
+
