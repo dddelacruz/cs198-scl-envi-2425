@@ -267,7 +267,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     e <- rep(0, s+t-2)
     
     formula <-
-      n ~ f(
+      NewCases ~ f(
         idarea,
         model = "bym2",
         graph = g,
@@ -297,10 +297,18 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
 
 # run INLA models
 #mod_II <- inla(formula_II, family="poisson", data=shapefile@data, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+mod_base <- inla_mod_st(df=shapefile@data)
+mod_I <- inla_mod_st(df=shapefile@data, interaction="I")
 mod_II <- inla_mod_st(df=shapefile@data, interaction="II")
+mod_III <- inla_mod_st(df=shapefile@data, interaction="III")
+mod_IV <- inla_mod_st(df=shapefile@data, interaction="IV")
 
 # add fitted values to dataframe
+shapefile@data$base <- mod_base$summary.fitted.values[, "mean"]
+shapefile@data$typeI <- mod_I$summary.fitted.values[, "mean"]
 shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
+shapefile@data$typeIII <- mod_III$summary.fitted.values[, "mean"]
+shapefile@data$typeIV <- mod_IV$summary.fitted.values[, "mean"]
 
 
 # compute relative risks
@@ -311,5 +319,9 @@ shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
 # export results
 write.csv(shapefile@data, "Results/spatio_temporal.csv")
 
-# save model
+# save models
+save(mod_base, file = "Models/SpatioTemporal/base.Rda")
+save(mod_I, file = "Models/SpatioTemporal/typeI.Rda")
 save(mod_II, file = "Models/SpatioTemporal/typeII.Rda")
+save(mod_III, file = "Models/SpatioTemporal/typeIII.Rda")
+save(mod_IV, file = "Models/SpatioTemporal/typeIV.Rda")
