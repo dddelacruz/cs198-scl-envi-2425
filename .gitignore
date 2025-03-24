@@ -1,3 +1,5 @@
 case_information/
 .Rproj.user
-aggregated_data/.~lock.CATANDUANES_total.csv\#
+01_data/00_raw
+**/.RData
+**/.Rhistory
