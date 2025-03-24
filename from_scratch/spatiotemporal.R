@@ -63,7 +63,7 @@ shapefile@data <-  shapefile@data %>%
   full_join(df, by="Municipality")
 
 # remove unnecessary columns
-shapefile@data <- select(shapefile@data,-c(FID))
+shapefile@data <- select(shapefile@data,-c(X, FID, d_cases, Recoveries, Deaths, NewCases))
 
 
 ## define function for inla models
@@ -95,7 +95,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
   # for the base model
   if(interaction == "no"){
     formula <-
-      NewCases ~ 
+      n ~ 
       f(
         idarea,
         model = "bym",
@@ -118,7 +118,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     if(model=="bym2"){
       if(!iid){
         formula <-
-          NewCases ~ f(
+          n ~ f(
             idarea,
             model = "bym2",
             graph = g,
@@ -140,7 +140,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
       }
       else{
         formula <-
-          NewCases ~ f(
+          n ~ f(
             idarea,
             model = "bym2",
             graph = g,
@@ -170,7 +170,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     
     else{
       formula <-
-        NewCases ~ f(
+        n ~ f(
           idarea,
           model = "bym",
           graph = g,
@@ -206,7 +206,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     e <- rep(0, s - 1)
     
     formula <-
-      NewCases ~ f(
+      n ~ f(
         idarea,
         model = "bym2",
         graph = g,
@@ -236,7 +236,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     e <- rep(0,t-1)
     
     formula <-
-      NewCases ~ f(
+      n ~ f(
         idarea,
         model = "bym2",
         graph = g,
@@ -267,7 +267,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
     e <- rep(0, s+t-2)
     
     formula <-
-      NewCases ~ f(
+      n ~ f(
         idarea,
         model = "bym2",
         graph = g,
@@ -295,6 +295,8 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
   mod
 }
 
+ptm <- proc.time()
+
 # run INLA models
 #mod_II <- inla(formula_II, family="poisson", data=shapefile@data, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
 mod_base <- inla_mod_st(df=shapefile@data)
@@ -310,6 +312,7 @@ shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
 shapefile@data$typeIII <- mod_III$summary.fitted.values[, "mean"]
 shapefile@data$typeIV <- mod_IV$summary.fitted.values[, "mean"]
 
+print(proc.time()-ptm)
 
 # compute relative risks
 
