@@ -74,13 +74,64 @@ shapefile@data <- shapefile@data %>%
     idareatime = 1:nrow(df)
   )
 
-# run inla model (just for cases)
+## run inla model (just for cases) (adapts type II model from study)
+# define variables for constraints
+s <- length(unique(shapefile@data$idarea))
+t <- length(unique(shapefile@data$idtime))
+
+#Define the temporal structure matrix of a RW1
+D1 <- diff(diag(t), differences = 1)
+Rt <- t(D1) %*% D1
+
+#Define the spatial structure matrix
+Rs <- matrix(0, g$n, g$n)
+for (i in 1:g$n) {
+  Rs[i, i] = g$nnbs[[i]]
+  Rs[i, g$nbs[[i]]] = -1
+}
+
+# define formula for type II interaction
+#Define the structure matrix of this type of interaction effect
+R <- kronecker(Rt, Diagonal(s))
+r <- s
+#Define the constraints
+A <- kronecker(matrix(1, 1, t), diag(s))
+A <- A[-1, ]
+e <- rep(0, s - 1)
+
+formula_II <-
+  NewCases ~ f(
+    idarea,
+    model = "bym2",
+    graph = g,
+    hyper = pc_prior,
+    constr = TRUE
+  ) +
+  f(
+    idtime,
+    model = "rw1",
+    hyper = list(prec = list(prior = sdunif)),
+    constr = TRUE
+  ) +
+  f(idareatime,
+    model = "generic0", Cmatrix=R, rankdef=r,
+    hyper=list(prec=list(prior=sdunif)),
+    constr = TRUE, extraconstr=list(A=A, e=e)
+  )
+
+# run INLA model
+mod_II <- inla(formula_II, family="poisson", data=shapefile@data, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+
 
 # add fitted values to dataframe
+shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
+
 
 # compute relative risks
 
 
 # plot relative risks on shapefile
 
+# export results
+write.csv(shapefile@data, "Results/spatio_temporal.csv")
 

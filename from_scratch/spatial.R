@@ -84,3 +84,5 @@ summary(bym2)
 # plot relative risks on shapefile
 
 
+# export results
+write.csv(shapefile@data, "Results/spatial.csv")
