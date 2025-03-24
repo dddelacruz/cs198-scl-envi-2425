@@ -28,9 +28,9 @@ df <- df %>%
 # load shapefile
 shapefile <- readOGR('catanduanes_shapefile.shp')
 
-ggplot() + 
-  geom_polygon(data = shapefile, colour = "black", fill = NA,  aes(x = long, y = lat, group = group, fill=Cases)) +
-  coord_fixed()
+#ggplot() + 
+#  geom_polygon(data = shapefile, colour = "black", fill = NA,  aes(x = long, y = lat, group = group, fill=Cases)) +
+#  coord_fixed()
 
 sf::sf_use_s2(FALSE)
 
@@ -63,8 +63,9 @@ shapefile@data <-  shapefile@data %>%
   full_join(df, by="Municipality")
 
 # remove unnecessary columns
-shapefile@data <- select(shapefile@data,-c(X, FID, d_cases, Recoveries, Deaths, NewCases))
+shapefile@data <- select(shapefile@data,-c(Longitude, Latitude, X, FID, d_cases, Recoveries, Deaths, NewCases))
 
+temp <- shapefile@data
 
 ## define function for inla models
 inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no"){
@@ -76,6 +77,8 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
       idtime1 = idtime,
       idareatime = 1:nrow(df)
     )
+  
+  temp<<-df
   
   # define variables for constraints
   s <- length(unique(df$idarea))
