@@ -65,63 +65,239 @@ shapefile@data <-  shapefile@data %>%
 # remove unnecessary columns
 shapefile@data <- select(shapefile@data,-c(FID))
 
-# define an index per date and area
-shapefile@data <- shapefile@data %>%
-  mutate(
-    idarea1 = idarea,
-    idtime = as.numeric(factor(Date)),
-    idtime1 = idtime,
-    idareatime = 1:nrow(df)
-  )
 
-## run inla model (just for cases) (adapts type II model from study)
-# define variables for constraints
-s <- length(unique(shapefile@data$idarea))
-t <- length(unique(shapefile@data$idtime))
-
-#Define the temporal structure matrix of a RW1
-D1 <- diff(diag(t), differences = 1)
-Rt <- t(D1) %*% D1
-
-#Define the spatial structure matrix
-Rs <- matrix(0, g$n, g$n)
-for (i in 1:g$n) {
-  Rs[i, i] = g$nnbs[[i]]
-  Rs[i, g$nbs[[i]]] = -1
+## define function for inla models
+inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no"){
+  # define an index for each area, time, and areatime
+  df <- df %>% 
+    mutate(
+      idarea1 = idarea,
+      idtime = as.numeric(factor(Date)),
+      idtime1 = idtime,
+      idareatime = 1:nrow(df)
+    )
+  
+  # define variables for constraints
+  s <- length(unique(df$idarea))
+  t <- length(unique(df$idtime))
+  
+  #Define the temporal structure matrix of a RW1
+  D1 <- diff(diag(t), differences = 1)
+  Rt <- t(D1) %*% D1
+  
+  #Define the spatial structure matrix
+  Rs <- matrix(0, g$n, g$n)
+  for (i in 1:g$n) {
+    Rs[i, i] = g$nnbs[[i]]
+    Rs[i, g$nbs[[i]]] = -1
+  }
+  
+  # for the base model
+  if(interaction == "no"){
+    formula <-
+      NewCases ~ 
+      f(
+        idarea,
+        model = "bym",
+        graph = g,
+        hyper = list(
+          prec.unstruct = list(prior = sdunif),
+          prec.spatial = list(prior = sdunif)
+        ),
+        constr = TRUE
+      ) +
+      f(
+        idtime,
+        model = rw,
+        hyper = list(prec = list(prior = sdunif)),
+        constr = TRUE
+      )
+  }
+  # type I interaction
+  else if (interaction=="I"){
+    if(model=="bym2"){
+      if(!iid){
+        formula <-
+          NewCases ~ f(
+            idarea,
+            model = "bym2",
+            graph = g,
+            hyper = pc_prior,
+            constr = TRUE
+          ) +
+          f(
+            idtime,
+            model = rw,
+            hyper = list(prec = list(prior = sdunif)),
+            constr = TRUE
+          ) +
+          f(
+            idareatime,
+            model = "iid",
+            hyper = list(prec = list(prior = sdunif)),
+            constr = TRUE
+          )
+      }
+      else{
+        formula <-
+          NewCases ~ f(
+            idarea,
+            model = "bym2",
+            graph = g,
+            hyper = pc_prior,
+            constr = TRUE
+          ) +
+          f(
+            idtime,
+            model = rw,
+            hyper = list(prec = list(prior = sdunif)),
+            constr = TRUE
+          ) +
+          f(
+            idtime1,
+            model = "iid",
+            hyper = list(prec = list(prior = sdunif)),
+            constr = TRUE
+          ) +
+          f(
+            idareatime,
+            model = "iid",
+            hyper = list(prec = list(prior = sdunif)),
+            constr = TRUE
+          )
+      }
+    }
+    
+    else{
+      formula <-
+        NewCases ~ f(
+          idarea,
+          model = "bym",
+          graph = g,
+          hyper = list(
+            prec.unstruct = list(prior = sdunif),
+            prec.spatial = list(prior = sdunif)
+          ),
+          constr = TRUE
+        ) +
+        f(
+          idtime,
+          model = rw,
+          hyper = list(prec = list(prior = sdunif)),
+          constr = TRUE
+        ) +
+        f(
+          idareatime,
+          model = "iid",
+          hyper = list(prec = list(prior = sdunif)),
+          constr = TRUE
+        )
+    }
+  }
+  
+  # formula for type II interaction
+  else if(interaction=="II"){
+    #Define the structure matrix of this type of interaction effect
+    R <- kronecker(Rt, Diagonal(s))
+    r <- s
+    #Define the constraints
+    A <- kronecker(matrix(1, 1, t), diag(s))
+    A <- A[-1, ]
+    e <- rep(0, s - 1)
+    
+    formula <-
+      NewCases ~ f(
+        idarea,
+        model = "bym2",
+        graph = g,
+        hyper = pc_prior,
+        constr = TRUE
+      ) +
+      f(
+        idtime,
+        model = rw,
+        hyper = list(prec = list(prior = sdunif)),
+        constr = TRUE
+      ) +
+      f(idareatime,
+        model = "generic0", Cmatrix=R, rankdef=r,
+        hyper=list(prec=list(prior=sdunif)),
+        constr = TRUE, extraconstr=list(A=A, e=e)
+      )
+  }
+  # for type III interaction
+  else if(interaction=="III"){
+    #Define the structure matrix of this type of interaction effect
+    R <- kronecker(Diagonal(t), Rs)
+    r <- t
+    #Define the constraints
+    A <- kronecker(Diagonal(t),matrix(1,1,s))
+    A <- A[-1,]
+    e <- rep(0,t-1)
+    
+    formula <-
+      NewCases ~ f(
+        idarea,
+        model = "bym2",
+        graph = g,
+        hyper = pc_prior,
+        constr = TRUE
+      ) +
+      f(
+        idtime,
+        model = rw,
+        hyper = list(prec = list(prior = sdunif)),
+        constr = TRUE
+      ) +
+      f(idareatime,
+        model = "generic0", Cmatrix=R, rankdef=r,
+        hyper=list(prec=list(prior=sdunif)),
+        constr = TRUE, extraconstr=list(A=A, e=e)
+      )
+  }
+  # for type IV interaction
+  else{
+    #Define the structure matrix of this type of interaction effect
+    R <- kronecker(Rt, Rs)
+    r <- s+t-1
+    #Define the constraints
+    A1 <- kronecker(matrix(1,1,t),Diagonal(s))
+    A2 <- kronecker(Diagonal(t),matrix(1,1,s))
+    A <- rbind(A1[-1,], A2[-1,])
+    e <- rep(0, s+t-2)
+    
+    formula <-
+      n ~ f(
+        idarea,
+        model = "bym2",
+        graph = g,
+        hyper = pc_prior,
+        constr = TRUE
+      ) +
+      f(
+        idtime,
+        model = rw,
+        hyper = list(prec = list(prior = sdunif)),
+        constr = TRUE
+      ) +
+      f(idareatime,
+        model = "generic0", Cmatrix=R, rankdef=r,
+        hyper=list(prec=list(prior=sdunif)),
+        constr = TRUE, extraconstr=list(A=A, e=e)
+      )
+  }
+  
+  
+  set.seed(316)
+  # return inla model
+  mod <- inla(formula, family="poisson", data=df, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+  
+  mod
 }
 
-# define formula for type II interaction
-#Define the structure matrix of this type of interaction effect
-R <- kronecker(Rt, Diagonal(s))
-r <- s
-#Define the constraints
-A <- kronecker(matrix(1, 1, t), diag(s))
-A <- A[-1, ]
-e <- rep(0, s - 1)
-
-formula_II <-
-  NewCases ~ f(
-    idarea,
-    model = "bym2",
-    graph = g,
-    hyper = pc_prior,
-    constr = TRUE
-  ) +
-  f(
-    idtime,
-    model = "rw1",
-    hyper = list(prec = list(prior = sdunif)),
-    constr = TRUE
-  ) +
-  f(idareatime,
-    model = "generic0", Cmatrix=R, rankdef=r,
-    hyper=list(prec=list(prior=sdunif)),
-    constr = TRUE, extraconstr=list(A=A, e=e)
-  )
-
-# run INLA model
-mod_II <- inla(formula_II, family="poisson", data=shapefile@data, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
-
+# run INLA models
+#mod_II <- inla(formula_II, family="poisson", data=shapefile@data, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+mod_II <- inla_mod_st(df=shapefile@data, interaction="II")
 
 # add fitted values to dataframe
 shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
@@ -135,3 +311,5 @@ shapefile@data$typeII <- mod_II$summary.fitted.values[, "mean"]
 # export results
 write.csv(shapefile@data, "Results/spatio_temporal.csv")
 
+# save model
+save(mod_II, file = "Models/SpatioTemporal/typeII.Rda")

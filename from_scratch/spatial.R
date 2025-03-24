@@ -86,3 +86,7 @@ summary(bym2)
 
 # export results
 write.csv(shapefile@data, "Results/spatial.csv")
+
+# save model
+save(bym, file = "Models/Spatial/bym.Rda")
+save(bym2, file = "Models/Spatial/bym2.Rda")
