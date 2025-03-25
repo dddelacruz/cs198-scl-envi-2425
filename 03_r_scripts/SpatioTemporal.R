@@ -26,7 +26,7 @@ library(stringr)
 province <- 'CATANDUANES'
 
 # load data from csv
-df <- read.csv(str_glue("../01_data/01_processed/{province}.csv"))
+df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data.csv"))
 
 # filter data to only include 2021-2022 data
 df <- df %>%
@@ -34,7 +34,7 @@ df <- df %>%
   filter(Date >= ymd('2021-01-01'))
 
 # load shapefile
-shapefile <- readOGR(str_glue("../01_data/00_raw/01_shapefiles/{province}/shapefile.shp"))
+shapefile <- readOGR(str_glue("../01_data/00_raw/01_shapefiles/{province}/{province}_shapefile.shp"))
 
 sf::sf_use_s2(FALSE)
 
@@ -318,11 +318,11 @@ shapefile@data$typeIII <- mod_III$summary.fitted.values[, "mean"]
 shapefile@data$typeIV <- mod_IV$summary.fitted.values[, "mean"]
 
 # export results
-write.csv(shapefile@data, str_glue("../04_results/{province}/01_spatiotemporal/results.csv"))
+write.csv(shapefile@data, str_glue("../04_results/{province}/01_spatiotemporal/{province}_results.csv"))
 
 # save models
-save(mod_base, file = str_glue("../04_results/{province}/01_spatiotemporal/models/base.Rda"))
-save(mod_I, file = str_glue("../04_results/{province}/01_spatiotemporal/models/typeI.Rda"))
-save(mod_II, file = str_glue("../04_results/{province}/01_spatiotemporal/models/typeII.Rda"))
-save(mod_III, file = str_glue("../04_results/{province}/01_spatiotemporal/models/typeIII.Rda"))
-save(mod_IV, file = str_glue("../04_results/{province}/01_spatiotemporal/models/typeIV.Rda"))
+save(mod_base, file = str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_base.Rda"))
+save(mod_I, file = str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_typeI.Rda"))
+save(mod_II, file = str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_typeII.Rda"))
+save(mod_III, file = str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_typeIII.Rda"))
+save(mod_IV, file = str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_typeIV.Rda"))
