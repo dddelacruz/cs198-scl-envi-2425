@@ -26,7 +26,7 @@ library(stringr)
 province <- 'CATANDUANES'
 
 # load data from csv
-df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data.csv"))
+df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data_exp.csv"))
 
 # filter data to only include 2021-2022 data
 df <- df %>%
@@ -294,7 +294,7 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
   
   set.seed(316)
   # return inla model
-  mod <- inla(formula, family="poisson", data=df, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
+  mod <- inla(formula, family="poisson", data=df, E=exp, control.compute=list(dic = TRUE, cpo = TRUE, waic = TRUE), control.predictor=list(compute=TRUE, cdf=c(log(1))))
   
   mod
 }
