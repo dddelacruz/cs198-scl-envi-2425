@@ -17,7 +17,7 @@ library(tibble)
 library(tsibble)
 library(Matrix) 
 library(ggplot2)
-library(rgdal)
+library(sf)
 library(sp)
 library(stringr)
 
@@ -26,7 +26,7 @@ library(stringr)
 province <- 'CATANDUANES'
 
 # load data from csv
-df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data_exp.csv"))
+df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data.csv"))
 
 # filter data to only include 2021-2022 data
 df <- df %>%
@@ -34,7 +34,10 @@ df <- df %>%
   filter(Date >= ymd('2021-01-01'))
 
 # load shapefile
-shapefile <- readOGR(str_glue("../01_data/00_raw/01_shapefiles/{province}/{province}_shapefile.shp"))
+shapefile_sf <- read_sf(str_glue("../01_data/00_raw/01_shapefiles/{province}/{province}_shapefile.shp"))
+
+# convert to spatial polygon data frame
+shapefile <- sf::as_Spatial(shapefile_sf)
 
 sf::sf_use_s2(FALSE)
 
