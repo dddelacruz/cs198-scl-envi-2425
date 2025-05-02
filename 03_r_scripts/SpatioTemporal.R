@@ -23,10 +23,10 @@ library(stringr)
 
 
 #### set province ####
-province <- 'CATANDUANES'
+province <- 'Catanduanes'
 
 # load data from csv
-df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data.csv"))
+df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data_psgc.csv"))
 
 # filter data to only include 2021-2022 data
 df <- df %>%
