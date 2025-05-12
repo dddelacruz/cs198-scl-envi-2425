@@ -65,11 +65,11 @@ shapefile$idarea <- 1:nrow(shapefile@data)
 
 # combine data with shapefile
 shapefile@data <-  shapefile@data %>%
-  rename(Municipality = Labels) %>%
-  full_join(df, by="Municipality")
+  rename(PSGC = psgc_code) %>%
+  full_join(df, by="PSGC")
 
 # remove unnecessary columns
-shapefile@data <- select(shapefile@data,-c(d_cases, Recoveries, Deaths, NewCases))
+shapefile@data <- select(shapefile@data, c(PSGC, Municipality, idarea, Date, n, exp))
 
 ## define function for inla models
 inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no"){
@@ -81,8 +81,6 @@ inla_mod_st <- function(df, model="bym2", iid=FALSE, rw="rw1", interaction="no")
       idtime1 = idtime,
       idareatime = 1:nrow(df)
     )
-  
-  temp<<-df
   
   # define variables for constraints
   s <- length(unique(df$idarea))
