@@ -11,7 +11,7 @@ library(stringr)
 
 
 #### set province ####
-province <- 'CATANDUANES'
+province <- 'Catanduanes'
 
 # load models
 load(file=str_glue("../04_results/{province}/01_spatiotemporal/models/{province}_base.Rda"))
