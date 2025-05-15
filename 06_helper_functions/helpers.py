@@ -26,7 +26,7 @@ def get_mun_codes(prov_psgc):
 
     # filter dataframe
     df_psgc_mun = df_psgc_mun[df_psgc_mun['adm2_psgc'] == prov_psgc]
-    mun_pgsc = df_psgc_mun['adm3_psgc'].copy()
+    mun_pgsc = df_psgc_mun[['adm3_en', 'adm3_psgc']].copy()
 
     # delete dataframe
     del df_psgc_mun
