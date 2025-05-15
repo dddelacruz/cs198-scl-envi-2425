@@ -23,7 +23,7 @@ library(stringr)
 
 
 #### set province ####
-province <- 'Catanduanes'
+province <- 'Quezon'
 
 # load data from csv
 df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data_psgc.csv"))
@@ -34,7 +34,7 @@ df <- df %>%
   filter(Date >= ymd('2021-01-01'))
 
 # load shapefile
-shapefile_sf <- read_sf(str_glue("../01_data/00_raw/01_shapefiles/{province}/{province}_shapefile.shp"))
+shapefile_sf <- read_sf(str_glue("../01_data/01_processed/02_filtered_shapefiles/{province}/{province}.shp"))
 
 # convert to spatial polygon data frame
 shapefile <- sf::as_Spatial(shapefile_sf)
@@ -65,7 +65,7 @@ shapefile$idarea <- 1:nrow(shapefile@data)
 
 # combine data with shapefile
 shapefile@data <-  shapefile@data %>%
-  rename(PSGC = psgc_code) %>%
+  rename(PSGC = adm3_psgc) %>%
   full_join(df, by="PSGC")
 
 # remove unnecessary columns
