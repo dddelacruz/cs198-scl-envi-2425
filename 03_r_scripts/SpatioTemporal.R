@@ -23,7 +23,7 @@ library(stringr)
 
 
 #### set province ####
-province <- 'Quezon'
+province <- 'Marinduque'
 
 # load data from csv
 df <- read.csv(str_glue("../01_data/01_processed/00_case_data/{province}_case_data_psgc.csv"))
